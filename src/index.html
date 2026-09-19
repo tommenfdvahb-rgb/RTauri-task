@@ -30,11 +30,11 @@
       <p class="hint" id="setup-hint"></p>
       <div class="ckrow">
         <input type="checkbox" id="ck-bg" onchange="previewGlass()">
-        <span>毛玻璃背景（模糊看穿到桌面，文字清晰）</span>
+        <span>毛玻璃模糊（关闭后为纯透明背景，无模糊）</span>
       </div>
-      <label class="fld">毛玻璃透明度（越左越透，实时生效）</label>
+      <label class="fld">背景透明度（越左越透，两种模式都实时生效）</label>
       <div class="oprow">
-        <input type="range" id="op" min="40" max="95" step="5" oninput="previewGlass()">
+        <input type="range" id="op" min="10" max="95" step="5" oninput="previewGlass()">
         <span class="opv" id="opv"></span>
       </div>
       <label class="fld">服务器地址</label>

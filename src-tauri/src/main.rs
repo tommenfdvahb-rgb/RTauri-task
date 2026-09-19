@@ -48,7 +48,7 @@ impl Default for Config {
 
 impl Config {
     fn clamp(&mut self) {
-        self.glass_alpha = self.glass_alpha.clamp(0.4, 0.95);
+        self.glass_alpha = self.glass_alpha.clamp(0.1, 0.95);
         self.width = self.width.clamp(280, 2000);
         self.height = self.height.clamp(300, 2000);
         self.server = normalize_server(&self.server);
@@ -93,21 +93,24 @@ fn normalize_server(url: &str) -> String {
 
 // ---------------- 毛玻璃 ----------------
 
-// 用 serde 从 JSON 构造 WindowEffectsConfig，避免手写 Effect/Color 类型细节。
-// 毛玻璃开：acrylic，系统层只提供模糊（染色 alpha 置 0）；
-// 毛玻璃关：solid + 不透明底色。
-// 染色浓度不交给系统层：部分新版 Windows（24H2+）会忽略 SetWindowCompositionAttribute
-// 的 GradientColor alpha，导致调节无感；网页层的 CSS 半透明底色在所有系统上都可靠。
+// 背景模式（染色浓度统一由网页层 CSS 控制，系统层只决定"有没有模糊"）：
+// 毛玻璃开：acrylic（染色 alpha 置 0），磨砂看穿桌面；
+// 毛玻璃关：清除系统效果（set_effects(None)），窗口本身逐像素透明 = 纯透明背景。
+// 注：部分新版 Windows（24H2+）会忽略 SetWindowCompositionAttribute 的染色 alpha，
+// 故透明度绝不依赖系统层。
 fn apply_glass(win: &WebviewWindow, cfg: &Config) -> Result<(), String> {
-    let alpha = if cfg.bg_transparent { 0 } else { 255 };
-    let effects: tauri::utils::config::WindowEffectsConfig = serde_json::from_value(
-        serde_json::json!({
-            "effects": [if cfg.bg_transparent { "acrylic" } else { "solid" }],
-            "color": [18, 26, 48, alpha]
-        }),
-    )
-    .map_err(|e| e.to_string())?;
-    win.set_effects(effects).map_err(|e| e.to_string())
+    if cfg.bg_transparent {
+        let effects: tauri::utils::config::WindowEffectsConfig = serde_json::from_value(
+            serde_json::json!({
+                "effects": ["acrylic"],
+                "color": [18, 26, 48, 0]
+            }),
+        )
+        .map_err(|e| e.to_string())?;
+        win.set_effects(effects).map_err(|e| e.to_string())
+    } else {
+        win.set_effects(None).map_err(|e| e.to_string())
+    }
 }
 
 // ---------------- 窗口几何记忆 ----------------
@@ -173,7 +176,7 @@ fn set_server(window: WebviewWindow, url: String) -> Config {
 fn set_glass(window: WebviewWindow, on: bool, alpha: f64) -> Result<(), String> {
     let mut cfg = load_config();
     cfg.bg_transparent = on;
-    cfg.glass_alpha = alpha.clamp(0.4, 0.95);
+    cfg.glass_alpha = alpha.clamp(0.1, 0.95);
     save_config(&cfg);
     apply_glass(&window, &cfg)
 }

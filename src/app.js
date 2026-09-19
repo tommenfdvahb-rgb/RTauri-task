@@ -250,12 +250,10 @@ async function togglePin() {
 
 /* ---------- 设置 ---------- */
 
-/* 染色浓度由网页层控制：半透明底色叠加在系统亚克力模糊上，
+/* 染色浓度由网页层控制：半透明底色叠加在系统效果上（毛玻璃开=磨砂，关=纯透明），
    任何 Windows 版本上都立竿见影；系统层（set_glass）只负责模糊开关。 */
 function applyGlassUi() {
-  document.body.style.background = GLASS.bg_transparent
-    ? `rgba(18, 26, 48, ${GLASS.glass_alpha})`
-    : "#101830";
+  document.body.style.background = `rgba(18, 26, 48, ${GLASS.glass_alpha})`;
 }
 
 function previewGlass() {
