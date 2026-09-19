@@ -1,0 +1,12 @@
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Node（若引入前端构建）
+node_modules/
+
+# 运行时产物
+widget_config.json
+*.log
+dist/
+build/
