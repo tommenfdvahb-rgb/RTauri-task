@@ -20,6 +20,9 @@ let lastCols = 0;
 let loadBusy = false;
 let previewTimer = null;
 
+/* 按挂件宽度决定项目卡片列数（每列至少约 240px，最多 4 列） */
+const colsFor = w => Math.max(1, Math.min(4, Math.floor(w / 240)));
+
 function normServer(u) {
   u = String(u || "").trim().replace(/\/+$/, "");
   if (u && !/^https?:\/\//i.test(u)) u = "http://" + u;
@@ -65,7 +68,7 @@ function itemRow(pid, sid, i) {
     <input type="checkbox" title="标记完成" onchange="toggleItem(this, ${i.id})">
     <span class="tn">${esc(i.name)}${i.owner ? ` <span style="color:#8fa2c9">· ${esc(i.owner)}</span>` : ""} ${due}</span>
     <button class="up" title="上传文件（自动标记该材料完成）"
-      data-nm="${esc(i.name)}" onclick="uploadFor(${pid}, ${sid}, ${i.id}, this)">⬆ 上传</button>
+      data-nm="${esc(i.name)}" onclick="uploadFor(${pid}, ${sid}, ${i.id}, this)">⬆</button>
   </div>`;
 }
 
@@ -116,7 +119,7 @@ function render(digest, details) {
   document.getElementById("foot-time").textContent =
     "最后更新 " + new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 
-  const cols = Math.max(1, Math.min(3, Math.floor(document.body.clientWidth / 340)));
+  const cols = colsFor(document.body.clientWidth || 350);
   lastCols = cols;
   let html = "";
   if (digest.overdue_projects && digest.overdue_projects.length)
@@ -306,7 +309,7 @@ function quitApp() {
 /* ---------- 多列布局：宽度变化时只调列数，内容自动回流 ---------- */
 
 window.addEventListener("resize", () => {
-  const cols = Math.max(1, Math.min(3, Math.floor(document.body.clientWidth / 340)));
+  const cols = colsFor(document.body.clientWidth);
   if (cols !== lastCols) {
     lastCols = cols;
     document.getElementById("list").style.setProperty("--cols", cols);
