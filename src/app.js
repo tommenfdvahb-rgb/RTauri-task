@@ -14,6 +14,7 @@ const dayDiff = d => Math.round((new Date(d + "T00:00:00") - new Date(todayStr()
 
 let SERVER = "";
 let ON_TOP = true;
+let LOCKED = false;
 let GLASS = { bg_transparent: true, glass_alpha: 0.72 };
 let firstRun = false;
 let lastCols = 0;
@@ -207,6 +208,32 @@ function openApp() {
   if (SERVER) invoke("open_url", { url: SERVER + "/" });
 }
 
+/* ---------- 锁定：上锁后不能拖动/缩放 ---------- */
+
+const DRAG_REGION_SEL = "header, header .t, header .sp, footer, footer .drag-hint";
+
+function applyLock() {
+  const b = document.getElementById("btn-lock");
+  if (!b) return;
+  b.textContent = LOCKED ? "🔒" : "🔓";
+  b.classList.toggle("on", LOCKED);
+  b.title = LOCKED ? "已上锁：位置与大小已固定，点击解锁" : "上锁（禁止拖动和缩放）";
+  document.querySelectorAll(DRAG_REGION_SEL).forEach(el => {
+    if (LOCKED) el.removeAttribute("data-tauri-drag-region");
+    else el.setAttribute("data-tauri-drag-region", "");
+  });
+  const hint = document.querySelector(".drag-hint");
+  if (hint) hint.textContent = LOCKED
+    ? "🔒 已上锁 · 点🔓解锁后才能拖动"
+    : "⠿ 按住此处拖动 · 拖动窗口边缘调整大小";
+}
+
+async function toggleLock() {
+  LOCKED = !LOCKED;
+  applyLock();
+  try { await invoke("set_locked", { on: LOCKED }); } catch (e) { console.warn("set_locked:", e); }
+}
+
 /* ---------- 置顶 ---------- */
 
 function renderPin() {
@@ -323,9 +350,11 @@ window.addEventListener("resize", () => {
     const cfg = await invoke("get_config");
     SERVER = normServer(cfg.server);
     ON_TOP = !!cfg.on_top;
+    LOCKED = !!cfg.locked;
     GLASS = { bg_transparent: !!cfg.bg_transparent, glass_alpha: cfg.glass_alpha ?? 0.72 };
   } catch (e) { console.warn("get_config:", e); }
   applyGlassUi();
+  applyLock();
   renderPin();
   load();                        // 无服务器时列表区显示引导文案
   if (!SERVER) openSetup(true);  // 首次引导可「跳过」，之后随时在 ⚙ 里补填

@@ -23,6 +23,7 @@ struct Config {
     bg_transparent: bool,
     glass_alpha: f64,
     on_top: bool,
+    locked: bool,
     width: i32,
     height: i32,
     x: Option<i32>,
@@ -36,6 +37,7 @@ impl Default for Config {
             bg_transparent: true,
             glass_alpha: 0.72,
             on_top: true,
+            locked: false,
             width: 350,
             height: 580,
             x: None,
@@ -182,6 +184,15 @@ fn set_on_top(window: WebviewWindow, on: bool) {
     cfg.on_top = on;
     save_config(&cfg);
     let _ = window.set_always_on_top(on);
+}
+
+// 上锁：禁止拖动/缩放（前端同时移除拖动区属性），状态持久化，重启后保持
+#[tauri::command]
+fn set_locked(window: WebviewWindow, on: bool) {
+    let mut cfg = load_config();
+    cfg.locked = on;
+    save_config(&cfg);
+    let _ = window.set_resizable(!on);
 }
 
 #[tauri::command]
@@ -337,6 +348,7 @@ fn main() {
             set_server,
             set_glass,
             set_on_top,
+            set_locked,
             quit,
             open_url,
             pick_files,
@@ -352,6 +364,7 @@ fn main() {
             let cfg = load_config();
 
             let _ = win.set_always_on_top(cfg.on_top);
+            let _ = win.set_resizable(!cfg.locked);
             if let (Some(x), Some(y)) = (cfg.x, cfg.y) {
                 let _ = win.set_position(PhysicalPosition::new(x, y));
             }
