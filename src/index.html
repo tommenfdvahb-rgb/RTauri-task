@@ -37,10 +37,11 @@
         <span class="opv" id="opv"></span>
       </div>
       <label class="fld">服务器地址</label>
-      <input type="text" id="su" placeholder="例如 192.168.1.10:8300">
+      <input type="text" id="su" placeholder="例如 192.168.1.10:8300"
+        onkeydown="if(event.key==='Enter')saveSetup()">
       <div class="err" id="serr"></div>
       <div class="btns">
-        <button class="cancel" id="btn-close" onclick="closeSetup()">关闭</button>
+        <button class="cancel" id="btn-close" onclick="closeSetup()">跳 过</button>
         <button class="ok" onclick="saveSetup()">保 存</button>
       </div>
     </div>

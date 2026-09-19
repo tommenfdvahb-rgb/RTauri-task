@@ -5,7 +5,9 @@
 html { background: transparent; }
 body {
   font-family: "Microsoft YaHei", sans-serif;
-  background: transparent;
+  /* 染色浓度由 JS 调节（毛玻璃透明度设置），这里只是默认值；
+     系统层亚克力只负责模糊，颜色叠加全在网页层，保证任何 Windows 版本上调节都生效 */
+  background: rgba(18, 26, 48, 0.72);
   color: #e7ecf7; height: 100vh; overflow: hidden;
   display: flex; flex-direction: column; user-select: none;
 }

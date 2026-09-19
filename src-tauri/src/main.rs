@@ -92,14 +92,12 @@ fn normalize_server(url: &str) -> String {
 // ---------------- 毛玻璃 ----------------
 
 // 用 serde 从 JSON 构造 WindowEffectsConfig，避免手写 Effect/Color 类型细节。
-// 毛玻璃开：acrylic + 半透明深蓝染色（alpha 来自 glass_alpha）；
-// 毛玻璃关：solid + 不透明底色，视觉等价于旧版的不透明模式。
+// 毛玻璃开：acrylic，系统层只提供模糊（染色 alpha 置 0）；
+// 毛玻璃关：solid + 不透明底色。
+// 染色浓度不交给系统层：部分新版 Windows（24H2+）会忽略 SetWindowCompositionAttribute
+// 的 GradientColor alpha，导致调节无感；网页层的 CSS 半透明底色在所有系统上都可靠。
 fn apply_glass(win: &WebviewWindow, cfg: &Config) -> Result<(), String> {
-    let alpha = if cfg.bg_transparent {
-        (cfg.glass_alpha.clamp(0.4, 0.95) * 255.0).round() as u8
-    } else {
-        255
-    };
+    let alpha = if cfg.bg_transparent { 0 } else { 255 };
     let effects: tauri::utils::config::WindowEffectsConfig = serde_json::from_value(
         serde_json::json!({
             "effects": [if cfg.bg_transparent { "acrylic" } else { "solid" }],

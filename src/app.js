@@ -220,13 +220,24 @@ async function togglePin() {
 
 /* ---------- 设置 ---------- */
 
+/* 染色浓度由网页层控制：半透明底色叠加在系统亚克力模糊上，
+   任何 Windows 版本上都立竿见影；系统层（set_glass）只负责模糊开关。 */
+function applyGlassUi() {
+  document.body.style.background = GLASS.bg_transparent
+    ? `rgba(18, 26, 48, ${GLASS.glass_alpha})`
+    : "#101830";
+}
+
 function previewGlass() {
   const on = document.getElementById("ck-bg").checked;
   const alpha = parseInt(document.getElementById("op").value, 10) / 100;
   document.getElementById("opv").textContent = document.getElementById("op").value + "%";
   GLASS = { bg_transparent: on, glass_alpha: alpha };
+  applyGlassUi();
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => { invoke("set_glass", { on, alpha }).catch(() => {}); }, 120);
+  previewTimer = setTimeout(() => {
+    invoke("set_glass", { on, alpha }).catch(e => console.warn("set_glass:", e));
+  }, 120);
 }
 
 async function openSetup(isFirst) {
@@ -239,7 +250,7 @@ async function openSetup(isFirst) {
   } catch {}
   document.getElementById("setup-title").textContent = firstRun ? "📋 连接到项目进度服务器" : "挂件设置";
   document.getElementById("setup-hint").textContent = firstRun
-    ? "数据库、文件与每日提醒都在服务端。\n填写服务端地址，例如 192.168.1.10:8300"
+    ? "数据库、文件与每日提醒都在服务端。\n填写服务端地址，例如 192.168.1.10:8300。\n也可以先跳过，之后随时在 ⚙ 里填写。"
     : "";
   document.getElementById("su").value = SERVER;
   document.getElementById("ck-bg").checked = GLASS.bg_transparent;
@@ -247,14 +258,16 @@ async function openSetup(isFirst) {
   op.value = Math.round(GLASS.glass_alpha * 100);
   document.getElementById("opv").textContent = op.value + "%";
   document.getElementById("serr").textContent = "";
-  document.getElementById("btn-close").textContent = firstRun ? "退出挂件" : "关闭";
+  document.getElementById("btn-close").textContent = firstRun ? "跳 过" : "关闭";
+  applyGlassUi();
   renderPin();
   document.getElementById("setup").classList.add("show");
 }
 
 function closeSetup() {
-  if (firstRun) { quitApp(); return; }
   document.getElementById("setup").classList.remove("show");
+  firstRun = false;
+  if (!SERVER) load();   // 首次跳过后，列表区显示"尚未配置服务器"的引导
 }
 
 async function saveSetup() {
@@ -273,8 +286,9 @@ async function saveSetup() {
   try {
     await invoke("set_server", { url });
     SERVER = url;
-    await invoke("set_glass", { on, alpha });
     GLASS = { bg_transparent: on, glass_alpha: alpha };
+    applyGlassUi();
+    await invoke("set_glass", { on, alpha });
   } catch (e) {
     err.textContent = "保存失败：" + errMsg(e);
     return;
@@ -307,9 +321,10 @@ window.addEventListener("resize", () => {
     SERVER = normServer(cfg.server);
     ON_TOP = !!cfg.on_top;
     GLASS = { bg_transparent: !!cfg.bg_transparent, glass_alpha: cfg.glass_alpha ?? 0.72 };
-  } catch {}
+  } catch (e) { console.warn("get_config:", e); }
+  applyGlassUi();
   renderPin();
-  if (SERVER) load();
-  else openSetup(true);
+  load();                        // 无服务器时列表区显示引导文案
+  if (!SERVER) openSetup(true);  // 首次引导可「跳过」，之后随时在 ⚙ 里补填
   setInterval(load, 60 * 1000);
 })();
